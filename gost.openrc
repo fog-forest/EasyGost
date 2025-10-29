@@ -1,0 +1,58 @@
+#!/bin/bash
+
+NAME="gost"
+DAEMON="/usr/bin/gost"
+CONFIG_FILE="/etc/gost/config.json"
+PIDFILE="/var/run/gost.pid"
+
+start() {
+    start-stop-daemon --start --quiet --background --pidfile $PIDFILE --exec $DAEMON -- \
+        -C $CONFIG_FILE
+    echo "$NAME started."
+}
+
+stop() {
+    # 查找 gost 进程的 PID
+    PID=$(pgrep -f "gost -C /etc/gost/config.json")
+    if [ -n "$PID" ]; then
+        # 发送 SIGTERM 信号停止进程
+        kill $PID
+        # 等待进程结束
+        while kill -0 $PID 2>/dev/null; do
+            sleep 1
+        done
+        echo "$NAME stopped."
+    else
+        echo "$NAME is not running."
+    fi
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+start)
+    start
+    ;;
+stop)
+    stop
+    ;;
+restart)
+    restart
+    ;;
+status)
+    if pgrep -f "gost -C /etc/gost/config.json" >/dev/null; then
+        echo "$NAME is running."
+    else
+        echo "$NAME is not running."
+    fi
+    ;;
+*)
+    echo "Usage: /etc/init.d/$NAME {start|stop|restart|status}"
+    exit 1
+    ;;
+esac
+
+exit 0
